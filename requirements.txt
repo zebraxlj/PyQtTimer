@@ -1,0 +1,12 @@
+aws-mfa
+boto3
+dataclasses-json
+openpyxl
+pandas
+pyqt5
+pyqt5-tools
+PyQt-Fluent-Widgets[full]
+PyQtWebEngine
+PyQtWebEngine-Qt5
+pytest
+pyinstaller
