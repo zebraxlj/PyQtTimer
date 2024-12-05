@@ -1,4 +1,6 @@
+import os
 import platform
+import sys
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import partial
@@ -14,13 +16,22 @@ from simple_timer import SimpleTimer
 
 FONT_CN = 'Microsoft YaHei'
 
-ICON_FOLDER = 'res/'
 
-ICON_CLEAR = f'{ICON_FOLDER}trash.png'
-ICON_START = f'{ICON_FOLDER}play-circle.png'
-ICON_PAUSE = f'{ICON_FOLDER}pause-circle.png'
-ICON_RESET = f'{ICON_FOLDER}rotate-left.png'
-ICON_TOMATO = f'{ICON_FOLDER}pomodoro-icon.png'
+def resource_path(relative_path):
+    """Get the absolute path to a resource."""
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, f'./{relative_path}')
+    return os.path.join(os.path.abspath(os.path.dirname(__file__)), f'../{relative_path}')
+
+# 使用这个函数来获取图片路径
+RES_FOLDER = resource_path('res/')
+
+
+ICON_CLEAR = f'{RES_FOLDER}trash.png'
+ICON_START = f'{RES_FOLDER}play-circle.png'
+ICON_PAUSE = f'{RES_FOLDER}pause-circle.png'
+ICON_RESET = f'{RES_FOLDER}rotate-left.png'
+ICON_TOMATO = f'{RES_FOLDER}pomodoro-icon.png'
 
 
 class TimerCtrlStateEnum(str, Enum):

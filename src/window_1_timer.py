@@ -17,7 +17,7 @@ class OneTimerWindow(QMainWindow):
 
 if __name__ == '__main__':
     '''
-    pyinstaller --clean --onefile -n "番茄计时器" --add-data "*.png;." --noconsole -i pomodoro-icon.ico .\pomodoro.py
+    pyinstaller --clean -n "番茄计时器" --add-data "./res/*.png;./res/" -i ./res/pomodoro-icon.ico .\src\window_1_timer.py --onefile --noconsole
     rm -r build
     '''
     import os
