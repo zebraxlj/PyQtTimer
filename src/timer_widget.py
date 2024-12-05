@@ -452,7 +452,7 @@ class TimerWidget(QWidget):
         self.start_pause_button.set_curr_state(TimerCtrlStateEnum.START)
         self.update_timer.stop()
         self.complete_notice_timer.stop()
-        self.timer = None
+        self.timer = SimpleTimer()
         self.refresh_timer_display(0)
         self.refresh_timer_progress(0)
     # endregion 计时控制功能
