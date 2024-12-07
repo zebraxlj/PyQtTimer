@@ -2,14 +2,14 @@ import os
 import platform
 import sys
 from datetime import datetime, timedelta
-from enum import Enum
+from enum import Enum, auto
 from functools import partial
 from PyQt5.QtCore import Qt, QEvent, QSize, QTimer, QObject
 from PyQt5.QtGui import QColor, QFont, QIcon, QIntValidator, QPalette, QKeyEvent, QKeySequence, QMouseEvent, QWheelEvent
 from PyQt5.QtWidgets import (
     QApplication, QWidget,
     QFrame, QHBoxLayout, QVBoxLayout,
-    QLabel, QLineEdit, QProgressBar, QPushButton
+    QLabel, QLayout, QLineEdit, QProgressBar, QPushButton
     )
 
 from simple_timer import SimpleTimer
@@ -32,6 +32,14 @@ ICON_START = f'{RES_FOLDER}play-circle.png'
 ICON_PAUSE = f'{RES_FOLDER}pause-circle.png'
 ICON_RESET = f'{RES_FOLDER}rotate-left.png'
 ICON_TOMATO = f'{RES_FOLDER}pomodoro-icon.png'
+
+COLOR_WINDOW_BG = QColor('white')
+COLOR_WINDOW_BG_ALARM = QColor('mistyrose')
+
+
+class DispModeEnum(Enum):
+    CLEAN = auto()
+    FULL = auto()
 
 
 class TimerCtrlStateEnum(str, Enum):
@@ -163,11 +171,17 @@ class TimerWidget(QWidget):
         self.minute_10_button = TimerAddTimeButton(10 * 60,'10分', self)
         self.timer = SimpleTimer()
         self.dt_pause_start, self.dt_pause_stop = datetime.now(), datetime.now()
+        # 说明文字
+        self.disp_mode = DispModeEnum.FULL
+        self.timer_hint_label = QLabel('鼠标选中数字+键盘 / 鼠标移到数字+滚轮')
+        self.add_time_label = QLabel('左键加时长，右键减时长')
+
         self.initUi()
 
     def initUi(self):
         hbox_align_center = QHBoxLayout()
         hbox_align_center.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hbox_align_center.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
         self.setLayout(hbox_align_center)
 
         vbox = QVBoxLayout()
@@ -190,10 +204,10 @@ class TimerWidget(QWidget):
         hbox_hint.addWidget(hint_line_edit)
         vbox.addLayout(hbox_hint)
 
-        timer_hint_label = QLabel('鼠标选中数字+键盘 / 鼠标移到数字+滚轮')
-        timer_hint_label.setStyleSheet(f'color:gray; font-family:{FONT_CN}; font-size: 20px; font-weight: bold;')
-        timer_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        vbox.addWidget(timer_hint_label)
+        self.timer_hint_label = QLabel('鼠标选中数字+键盘 / 鼠标移到数字+滚轮')
+        self.timer_hint_label.setStyleSheet(f'color:gray; font-family:{FONT_CN}; font-size: 20px; font-weight: bold;')
+        self.timer_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        vbox.addWidget(self.timer_hint_label)
 
         # region 元素：时间展示区
         vbox_timer_w_progress = QVBoxLayout()
@@ -238,10 +252,9 @@ class TimerWidget(QWidget):
         vbox_add_time = QVBoxLayout()
         vbox_add_time.setContentsMargins(0, 0, 0, 0)
 
-        add_time_label = QLabel('左键加时长，右键减时长')
-        add_time_label.setStyleSheet(f'color:gray; font-family:{FONT_CN}; font-size: 20px; font-weight: bold;')
-        add_time_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        vbox_add_time.addWidget(add_time_label)
+        self.add_time_label.setStyleSheet(f'color:gray; font-family:{FONT_CN}; font-size: 20px; font-weight: bold;')
+        self.add_time_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        vbox_add_time.addWidget(self.add_time_label)
 
         hbox_add_time = QHBoxLayout()
         hbox_add_time.setSpacing(10)
@@ -288,8 +301,10 @@ class TimerWidget(QWidget):
         self.reset_button.setFixedSize(ctrl_btn_size)
         self.clear_button.setFixedSize(ctrl_btn_size)
 
+        p = self.palette()
+        p.setColor(QPalette.ColorRole.Background, COLOR_WINDOW_BG)
+        self.setPalette(p)
         self.setStyleSheet(f'''
-                            TimerWidget{{background-color: white}}
                             #timer_mm_edit, #timer_ss_edit, #timer_sep_label{{
                                 background-color: transparent;
                                 border: 0px;
@@ -348,6 +363,11 @@ class TimerWidget(QWidget):
             print(f'TimerWidget{self.name}.handle_key_press {QKeySequence(event.key()).toString(QKeySequence.SequenceFormat.NativeText)}')
         if self.complete_notice_timer.isActive() and event.key() == Qt.Key.Key_Escape:
             self.reset()
+        if event.key() == Qt.Key.Key_F11:
+            if self.disp_mode == DispModeEnum.CLEAN:
+                self.set_disp_mode_full()
+            elif self.disp_mode == DispModeEnum.FULL:
+                self.set_disp_mode_clean()
 
     def handle_mouse_press_event_add_time_btn(self, btn: TimerAddTimeButton, event: QMouseEvent):
         """ 处理 增减时间按钮 鼠标行为，左键加时长，右键减时长 """
@@ -508,7 +528,7 @@ class TimerWidget(QWidget):
     def timer_complete_worker(self):
         """ 倒计时结束 子线程行为 """
         p = self.palette()
-        p.setColor(QPalette.ColorRole.Background, QColor('mistyrose'))
+        p.setColor(QPalette.ColorRole.Background, COLOR_WINDOW_BG_ALARM)
         self.setPalette(p)
 
         duration = 200  # milliseconds
@@ -523,8 +543,24 @@ class TimerWidget(QWidget):
             for _ in range(repeat_cnt):
                 os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
 
-        p.setColor(QPalette.ColorRole.Background, QColor('white'))
+        p.setColor(QPalette.ColorRole.Background, COLOR_WINDOW_BG)
         self.setPalette(p)
+
+    def set_disp_mode_clean(self):
+        self.disp_mode = DispModeEnum.CLEAN
+        self.timer_hint_label.hide()
+        self.add_time_label.hide()
+        self.adjustSize()
+        # self.resize(self.layout().sizeHint())
+        # self.setFixedSize(self.layout().sizeHint())
+
+    def set_disp_mode_full(self):
+        self.disp_mode = DispModeEnum.FULL
+        self.timer_hint_label.show()
+        self.add_time_label.show()
+        self.adjustSize()
+        # self.resize(self.layout().sizeHint())
+        # self.setFixedSize(self.layout().sizeHint())
 
 
 if __name__ == '__main__':
