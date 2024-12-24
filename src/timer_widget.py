@@ -373,9 +373,9 @@ class TimerWidget(QWidget):
         if self.update_timer.isActive() or self.complete_notice_timer.isActive():
             return
         delta = -1 if event.angleDelta().y() < 0 else 1
-        if unit == 'mm':
+        if unit == 'mm' and self.timer_mm_edit.is_edit_allowed:
             self.add_to_total_seconds(minute=delta)
-        elif unit == 'ss':
+        elif unit == 'ss' and self.timer_ss_edit.is_edit_allowed:
             self.add_to_total_seconds(minute=0, second=delta)
 
     def add_to_total_seconds(self, minute: int, second: int = 0) -> None:
