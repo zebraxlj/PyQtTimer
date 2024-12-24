@@ -5,13 +5,14 @@ from datetime import datetime, timedelta
 from enum import Enum, auto
 from functools import partial
 from PyQt5.QtCore import Qt, QEvent, QSize, QTimer, QObject
-from PyQt5.QtGui import QColor, QFont, QIcon, QIntValidator, QPalette, QKeyEvent, QKeySequence, QMouseEvent, QWheelEvent
+from PyQt5.QtGui import QColor, QFont, QIcon, QIntValidator, QPalette, QKeyEvent, QMouseEvent, QWheelEvent
 from PyQt5.QtWidgets import (
     QApplication, QWidget,
     QFrame, QHBoxLayout, QVBoxLayout,
     QLabel, QLayout, QLineEdit, QProgressBar, QPushButton
     )
 
+from pyqt_helper import print_key_event
 from simple_timer import SimpleTimer
 
 FONT_CN = 'Microsoft YaHei'
@@ -101,11 +102,7 @@ class TimerNumberLineEdit(QLineEdit):
         pass
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        if event.key() in {Qt.Key.Key_Shift, Qt.Key.Key_Control, Qt.Key.Key_Alt}:
-            print(f'TimerNumberLineEdit.handle_key_press {QKeySequence(event.key())}')
-        else:
-            print(f'TimerNumberLineEdit.handle_key_press {QKeySequence(event.key()).toString(QKeySequence.SequenceFormat.NativeText)}')
-
+        print_key_event(msg=f'TimerNumberLineEdit.keyPressEvent', event=event)
         if not self.is_edit_allowed:
             self.refresh_display()
         elif event.key() == Qt.Key.Key_Escape:
@@ -349,18 +346,7 @@ class TimerWidget(QWidget):
         """ 处理 各种按键
         1. 计时器结束，正在播放提示时，可 Esc 停止
         """
-        modifiers_mask = {
-            Qt.KeyboardModifier.AltModifier, Qt.KeyboardModifier.ControlModifier, Qt.KeyboardModifier.MetaModifier, 
-            Qt.KeyboardModifier.ShiftModifier
-            }
-        keys_mask = {Qt.Key.Key_Alt, Qt.Key.Key_Control, Qt.Key.Key_Meta, Qt.Key.Key_Shift}
-        if event.modifiers() in modifiers_mask:
-            if event.key() not in keys_mask:
-                print(f'TimerWidget{self.name}.handle_key_press {QKeySequence(int(event.modifiers()) + event.key()).toString()}')
-            else:
-                print(f'TimerWidget{self.name}.handle_key_press {QKeySequence(int(event.modifiers())).toString()[:-1]}')
-        else:
-            print(f'TimerWidget{self.name}.handle_key_press {QKeySequence(event.key()).toString(QKeySequence.SequenceFormat.NativeText)}')
+        print_key_event(msg=f'TimerWidget{self.name}.handle_key_press', event=event)
         if self.complete_notice_timer.isActive() and event.key() == Qt.Key.Key_Escape:
             self.reset()
         if event.key() == Qt.Key.Key_F11:
