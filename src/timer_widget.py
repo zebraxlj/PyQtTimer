@@ -361,9 +361,9 @@ class TimerWidget(QWidget):
     def handle_mouse_press_event_add_time_btn(self, btn: TimerAddTimeButton, event: QMouseEvent):
         """ 处理 增减时间按钮 鼠标行为，左键加时长，右键减时长 """
         if event.button() == Qt.MouseButton.LeftButton:
-            self.add_to_total_seconds(0, btn.second)
+            self.add_to_total_seconds(minute=0, second=btn.second)
         elif event.button() == Qt.MouseButton.RightButton:
-            self.add_to_total_seconds(0, -btn.second)
+            self.add_to_total_seconds(minute=0, second=-btn.second)
         else:
             event.ignore()
 
@@ -374,9 +374,9 @@ class TimerWidget(QWidget):
             return
         delta = -1 if event.angleDelta().y() < 0 else 1
         if unit == 'mm':
-            self.add_to_total_seconds(delta)
+            self.add_to_total_seconds(minute=delta)
         elif unit == 'ss':
-            self.add_to_total_seconds(0, delta)
+            self.add_to_total_seconds(minute=0, second=delta)
 
     def add_to_total_seconds(self, minute: int, second: int = 0) -> None:
         """ 增加计时器时长 """
