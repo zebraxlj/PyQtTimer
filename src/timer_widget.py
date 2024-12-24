@@ -105,6 +105,7 @@ class TimerNumberLineEdit(QLineEdit):
         print_key_event(msg=f'TimerNumberLineEdit.keyPressEvent', event=event)
         if not self.is_edit_allowed:
             self.refresh_display()
+            return
         elif event.key() == Qt.Key.Key_Escape:
             self.clearFocus()
         elif event.key() in {
@@ -115,12 +116,14 @@ class TimerNumberLineEdit(QLineEdit):
             self.setReadOnly(False)
             self.setText(f'{text:02}')
             self.setReadOnly(True)
+            return
         elif event.key() == Qt.Key.Key_Backspace:
             text = self.text()[:-1]
             self.setReadOnly(False)
             self.setText(f'{int(text):02}')
             self.setReadOnly(True)
             return
+        super().keyPressEvent(event)
 
     def mouseDoubleClickEvent(self, a0: QMouseEvent) -> None:
         # print(f'TimerNumberLineEdit.mouseDoubleClickEvent {self.is_edit_allowed}')
