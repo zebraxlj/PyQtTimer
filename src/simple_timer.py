@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from enum import auto, Enum
 from typing import Optional
 
 

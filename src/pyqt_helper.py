@@ -4,7 +4,7 @@ from PyQt5.QtGui import QKeyEvent, QKeySequence
 
 def print_key_event(msg: str, event: QKeyEvent):
     modifiers_mask = {
-        Qt.KeyboardModifier.AltModifier, Qt.KeyboardModifier.ControlModifier, Qt.KeyboardModifier.MetaModifier, 
+        Qt.KeyboardModifier.AltModifier, Qt.KeyboardModifier.ControlModifier, Qt.KeyboardModifier.MetaModifier,
         Qt.KeyboardModifier.ShiftModifier
     }
     keys_mask = {Qt.Key.Key_Alt, Qt.Key.Key_Control, Qt.Key.Key_Meta, Qt.Key.Key_Shift}

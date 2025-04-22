@@ -10,7 +10,7 @@ class OneTimerWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUi()
-    
+
     def initUi(self):
         pass
 
@@ -19,7 +19,7 @@ if __name__ == '__main__':
     '''
     pyinstaller --clean -n "番茄计时器" --add-data "./res/*.png;./res/" -i ./res/pomodoro-icon.ico .\src\window_1_timer.py --onefile --noconsole
     rm -r build
-    '''
+    '''  # noqa
     import os
     import sys
     # os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     def mouseReleaseEvent(self: TimerWidget, event: QMouseEvent):
         if (
             event.button() in {Qt.MouseButton.MiddleButton}
-            ):
+        ):
             self.lastPos = QPoint()  # 松开鼠标重置位置信息
             QApplication.restoreOverrideCursor()
 

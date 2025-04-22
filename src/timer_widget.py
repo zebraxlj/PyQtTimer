@@ -24,9 +24,9 @@ def resource_path(relative_path):
         return os.path.join(sys._MEIPASS, f'./{relative_path}')
     return os.path.join(os.path.abspath(os.path.dirname(__file__)), f'../{relative_path}')
 
+
 # 使用这个函数来获取图片路径
 RES_FOLDER = resource_path('res/')
-
 
 ICON_CLEAR = f'{RES_FOLDER}trash.png'
 ICON_START = f'{RES_FOLDER}play-circle.png'
@@ -52,7 +52,7 @@ class TimerCtrlStateEnum(str, Enum):
 
 
 class TimerCtrlButton(QPushButton):
-    def __init__(self, ctrl_state = TimerCtrlStateEnum.UNKNOWN, *args, **kwargs):
+    def __init__(self, ctrl_state=TimerCtrlStateEnum.UNKNOWN, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.curr_state: TimerCtrlStateEnum = ctrl_state
 
@@ -102,7 +102,7 @@ class TimerNumberLineEdit(QLineEdit):
         pass
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        print_key_event(msg=f'TimerNumberLineEdit.keyPressEvent', event=event)
+        print_key_event(msg='TimerNumberLineEdit.keyPressEvent', event=event)
         if not self.is_edit_allowed:
             self.refresh_display()
             return
@@ -111,7 +111,7 @@ class TimerNumberLineEdit(QLineEdit):
         elif event.key() in {
             Qt.Key.Key_0, Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3, Qt.Key.Key_4,
             Qt.Key.Key_5, Qt.Key.Key_6, Qt.Key.Key_7, Qt.Key.Key_8, Qt.Key.Key_9,
-            }:
+        }:
             text = f'{self.text()}{chr(event.key())}'[-2:]
             self.setReadOnly(False)
             self.setText(f'{text:02}')
@@ -168,7 +168,7 @@ class TimerWidget(QWidget):
         self.minute_1_button = TimerAddTimeButton(1 * 60, '1分', self)
         self.minute_3_button = TimerAddTimeButton(3 * 60, '3分', self)
         self.minute_5_button = TimerAddTimeButton(5 * 60, '5分', self)
-        self.minute_10_button = TimerAddTimeButton(10 * 60,'10分', self)
+        self.minute_10_button = TimerAddTimeButton(10 * 60, '10分', self)
         self.timer = SimpleTimer()
         self.dt_pause_start, self.dt_pause_stop = datetime.now(), datetime.now()
         # 说明文字
@@ -234,7 +234,7 @@ class TimerWidget(QWidget):
         self.timer_progress.setStyleSheet(f'''
                                         #timer_progress{{ background-color: hsla(5, 0%, 85%, 45%); {timer_progress_border} }}
                                         #timer_progress::chunk{{ background-color: hsl(210, 45%, 45%); {timer_progress_border} }}
-                                        ''')
+                                        ''')  # noqa
         self.timer_progress.setFixedHeight(12)
 
         # region 元素：控制按钮
@@ -329,7 +329,7 @@ class TimerWidget(QWidget):
         self.minute_1_button.mousePressEvent = partial(self.handle_mouse_press_event_add_time_btn, self.minute_1_button)
         self.minute_3_button.mousePressEvent = partial(self.handle_mouse_press_event_add_time_btn, self.minute_3_button)
         self.minute_5_button.mousePressEvent = partial(self.handle_mouse_press_event_add_time_btn, self.minute_5_button)
-        self.minute_10_button.mousePressEvent = partial(self.handle_mouse_press_event_add_time_btn, self.minute_10_button)
+        self.minute_10_button.mousePressEvent = partial(self.handle_mouse_press_event_add_time_btn, self.minute_10_button)  # noqa
 
         self.update_timer.timeout.connect(self.on_timer_timeout)
         self.complete_notice_timer.timeout.connect(self.handle_timer_complete)
@@ -431,7 +431,7 @@ class TimerWidget(QWidget):
         ss = 0 if not self.timer_ss_edit.text() else int(self.timer_ss_edit.text())
         total_seconds = mm * 60 + ss
         dt_start, dt_stop = datetime.now(), datetime.now() + timedelta(seconds=total_seconds)
-        # print(f'[start] mm: {mm}, ss: {ss}, total_second: {total_seconds}, curr_ts: {self.timer.dt_start.isoformat()}, ts: {self.timer.dt_stop.isoformat()}')
+        # print(f'[start] mm: {mm}, ss: {ss}, total_second: {total_seconds}, curr_ts: {self.timer.dt_start.isoformat()}, ts: {self.timer.dt_stop.isoformat()}')  # noqa
         if dt_start == dt_stop:
             return False
         self.timer = SimpleTimer(dt_start, dt_stop)
@@ -497,7 +497,7 @@ class TimerWidget(QWidget):
 
     def on_timer_timeout(self):
         """ 倒计时结束 主线程行为 """
-        # print(f'[on_timer_timeout], {self.timer.dt_stop.isoformat()} {datetime.now().isoformat()} {self.timer.ms_remain()}')
+        # print(f'[on_timer_timeout], {self.timer.dt_stop.isoformat()} {datetime.now().isoformat()} {self.timer.ms_remain()}')  # noqa
         self.refresh_timer_display(self.timer.sec_remain())
         self.refresh_timer_progress(self.timer.ms_remain())
         if self.timer.is_time_up():
@@ -553,7 +553,6 @@ class TimerWidget(QWidget):
 
 
 if __name__ == '__main__':
-    import sys
     app = QApplication(sys.argv)
     window = TimerWidget()
     window.show()
