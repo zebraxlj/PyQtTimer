@@ -7,7 +7,7 @@ from functools import partial
 from PyQt5.QtCore import Qt, QEvent, QSize, QTimer, QObject
 from PyQt5.QtGui import QColor, QFont, QIcon, QIntValidator, QPalette, QKeyEvent, QMouseEvent, QWheelEvent
 from PyQt5.QtWidgets import (
-    QApplication, QWidget,
+    QApplication, QGridLayout, QWidget,
     QFrame, QHBoxLayout, QVBoxLayout,
     QLabel, QLayout, QLineEdit, QProgressBar, QPushButton
     )
@@ -36,6 +36,11 @@ ICON_TOMATO = f'{RES_FOLDER}pomodoro-icon.png'
 
 COLOR_WINDOW_BG = QColor('white')
 COLOR_WINDOW_BG_ALARM = QColor('mistyrose')
+
+
+class DispDirectionEnum(Enum):
+    HORIZONTAL = auto()
+    REGULAR = auto()
 
 
 class DispModeEnum(Enum):
@@ -147,7 +152,7 @@ class TimerAddTimeButton(QPushButton):
 
 
 class TimerWidget(QWidget):
-    def __init__(self, name: str = '') -> None:
+    def __init__(self, name: str = '', disp_direction: DispDirectionEnum = DispDirectionEnum.HORIZONTAL) -> None:
         super().__init__()
         # 倒计时名字
         self.name = name
@@ -173,9 +178,12 @@ class TimerWidget(QWidget):
         self.dt_pause_start, self.dt_pause_stop = datetime.now(), datetime.now()
         # 说明文字
         self.disp_mode = DispModeEnum.FULL
-        self.timer_hint_label = QLabel('鼠标选中数字+键盘 / 鼠标移到数字+滚轮')
+        self.timer_hint_label = QLabel('鼠标点击数字+键盘 / 鼠标悬停+滚轮')
         self.add_time_label = QLabel('左键加时长，右键减时长')
 
+        if disp_direction == DispDirectionEnum.HORIZONTAL:
+            self.initUiHorizontal()
+            return
         self.initUi()
 
     def initUi(self):
@@ -320,6 +328,163 @@ class TimerWidget(QWidget):
                             }}
                             TimerAddTimeButton:disabled{{ border-color: gray; }}
                            ''')
+
+        # 按钮控制
+        self.start_pause_button.clicked.connect(self.start_pause)
+        self.reset_button.clicked.connect(self.reset)
+        self.clear_button.clicked.connect(self.clear)
+
+        self.minute_1_button.mousePressEvent = partial(self.handle_mouse_press_event_add_time_btn, self.minute_1_button)
+        self.minute_3_button.mousePressEvent = partial(self.handle_mouse_press_event_add_time_btn, self.minute_3_button)
+        self.minute_5_button.mousePressEvent = partial(self.handle_mouse_press_event_add_time_btn, self.minute_5_button)
+        self.minute_10_button.mousePressEvent = partial(self.handle_mouse_press_event_add_time_btn, self.minute_10_button)  # noqa
+
+        self.update_timer.timeout.connect(self.on_timer_timeout)
+        self.complete_notice_timer.timeout.connect(self.handle_timer_complete)
+
+        self.installEventFilter(self)
+        self.keyPressEvent = self.handle_key_press
+
+    def initUiHorizontal(self):
+        hbox_align_center = QHBoxLayout()
+        hbox_align_center.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hbox_align_center.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
+        self.setLayout(hbox_align_center)
+
+        # region 元素：时间展示区
+        vbox_timer_w_progress = QVBoxLayout()
+        vbox_timer_w_progress.setSpacing(0)
+        vbox_timer_w_progress.setContentsMargins(0, 0, 0, 0)
+
+        hbox_timer_display = QHBoxLayout()
+        hbox_timer_display.setSpacing(2)
+        hbox_timer_display.setContentsMargins(0, 0, 0, 0)
+        hbox_timer_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hbox_timer_display.addWidget(self.timer_mm_edit)
+        hbox_timer_display.addWidget(self.timer_sep_label)
+        hbox_timer_display.addWidget(self.timer_ss_edit)
+
+        self.timer_hint_label.setStyleSheet(f'color:gray; font-family:{FONT_CN}; font-size: 20px; font-weight: bold;')
+        self.timer_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        vbox_timer_w_progress.addWidget(self.timer_hint_label)
+        vbox_timer_w_progress.addLayout(hbox_timer_display)
+        vbox_timer_w_progress.addWidget(self.timer_progress)
+
+        hbox_align_center.addLayout(vbox_timer_w_progress)
+        # endregion 元素：时间展示区
+
+        self.timer_progress.setObjectName('timer_progress')
+        self.timer_progress.setTextVisible(False)
+        timer_progress_border = 'border: 1px; border-bottom-left-radius:12px; border-bottom-right-radius:12px;'
+        self.timer_progress.setStyleSheet(f'''
+                                        #timer_progress{{ background-color: hsla(5, 0%, 85%, 45%); {timer_progress_border} }}
+                                        #timer_progress::chunk{{ background-color: hsl(210, 45%, 45%); {timer_progress_border} }}
+                                        ''')  # noqa
+        self.timer_progress.setFixedHeight(12)
+
+        # region 元素：控制按钮
+        vbox_control = QVBoxLayout()
+        vbox_control.setSpacing(0)
+        vbox_control.addWidget(self.start_pause_button)
+        vbox_control.addWidget(self.reset_button)
+        vbox_control.addWidget(self.clear_button)
+        hbox_align_center.addLayout(vbox_control)
+
+        separator = QFrame()
+        separator.setFrameStyle(QFrame.Shape.VLine | QFrame.Shadow.Plain)
+        separator.setContentsMargins(0, 0, 0, 0)
+        hbox_align_center.addWidget(separator)
+
+        vbox_add_time = QVBoxLayout()
+        vbox_add_time.setContentsMargins(0, 0, 0, 0)
+
+        self.add_time_label.setStyleSheet(f'color:gray; font-family:{FONT_CN}; font-size: 20px; font-weight: bold;')
+        self.add_time_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        vbox_add_time.addWidget(self.add_time_label)
+
+        grid_add_time = QGridLayout()
+        grid_add_time.setSpacing(2)
+        grid_add_time.setContentsMargins(0, 0, 0, 0)
+        grid_add_time.addWidget(self.minute_1_button, 1, 0)
+        grid_add_time.addWidget(self.minute_3_button, 1, 1)
+        grid_add_time.addWidget(self.minute_5_button, 2, 0)
+        grid_add_time.addWidget(self.minute_10_button, 2, 1)
+        vbox_add_time.addLayout(grid_add_time)
+
+        hbox_align_center.addLayout(vbox_add_time)
+        # endregion 元素：控制按钮
+
+        # 时间展示与输入
+        self.timer_mm_edit.setValidator(QIntValidator(1, 99, self))
+        self.timer_ss_edit.setValidator(QIntValidator(1, 99, self))
+        self.timer_mm_edit.wheelEvent = partial(self.handle_wheel_event_timer_edit, 'mm')
+        self.timer_ss_edit.wheelEvent = partial(self.handle_wheel_event_timer_edit, 'ss')
+        self.timer_sep_label.setFocus()
+
+        timer_font = QFont('calibri', 80, QFont.Weight.Bold)
+        self.timer_mm_edit.setFont(timer_font)
+        self.timer_ss_edit.setFont(timer_font)
+        self.timer_sep_label.setFont(timer_font)
+        self.timer_mm_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.timer_ss_edit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.timer_sep_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.timer_mm_edit.setText('00')
+        self.timer_ss_edit.setText('00')
+        self.timer_mm_edit.setMaxLength(2)
+        self.timer_ss_edit.setMaxLength(2)
+        self.timer_mm_edit.setFocus()
+
+        self.timer_mm_edit.setObjectName('timer_mm_edit')
+        self.timer_ss_edit.setObjectName('timer_ss_edit')
+        self.timer_sep_label.setObjectName('timer_sep_label')
+
+        self.minute_1_button.setObjectName('minute_1_button')
+        self.minute_3_button.setObjectName('minute_3_button')
+        self.minute_5_button.setObjectName('minute_5_button')
+        self.minute_10_button.setObjectName('minute_10_button')
+
+        ctrl_btn_h = ctrl_btn_w = 40
+        ctrl_btn_size = QSize(ctrl_btn_w, ctrl_btn_h)
+        self.start_pause_button.setIconSize(ctrl_btn_size)
+        self.reset_button.setIconSize(ctrl_btn_size)
+        self.clear_button.setIconSize(ctrl_btn_size)
+        self.start_pause_button.setFixedSize(ctrl_btn_size)
+        self.reset_button.setFixedSize(ctrl_btn_size)
+        self.clear_button.setFixedSize(ctrl_btn_size)
+        self.start_pause_button.setObjectName('start_pause_button')
+        self.reset_button.setObjectName('reset_button')
+        self.clear_button.setObjectName('clear_button')
+
+        p = self.palette()
+        p.setColor(QPalette.ColorRole.Background, COLOR_WINDOW_BG)
+        self.setPalette(p)
+        self.setStyleSheet(f'''
+                            #timer_mm_edit, #timer_ss_edit, #timer_sep_label{{
+                                background-color: transparent;
+                                border: 0px;
+                            }}
+                            #timer_mm_edit{{ border-top-left-radius: 12px; }}
+                            #timer_ss_edit{{ border-top-right-radius: 12px; }}
+                            #timer_mm_edit::focus, #timer_ss_edit::focus{{ background-color: gainsboro; }}
+
+                            #start_pause_button{{ background-color: gray; border: 1px; }}
+                            #reset_button{{ background-color: gray; border: 1px; }}
+                            #clear_button{{ background-color: gray; border: 1px; }}
+
+                            TimerCtrlButton{{ background-color: transparent; border: 0px; }}
+                            TimerAddTimeButton{{
+                                height: 55px; width: 95px;
+                                font-family: {FONT_CN}; font-size: 20px; font-weight: bold;
+                                background-color: gainsboro;
+                                border: 0px;
+                            }}
+                            #minute_1_button{{ border-top-left-radius: 12px; }}
+                            #minute_3_button{{ border-top-right-radius: 12px; }}
+                            #minute_5_button{{ border-bottom-left-radius: 12px; }}
+                            #minute_10_button{{ border-bottom-right-radius: 12px; }}
+                            TimerAddTimeButton:disabled{{ border-color: gray; }}
+                        ''')
 
         # 按钮控制
         self.start_pause_button.clicked.connect(self.start_pause)
